@@ -401,6 +401,35 @@ export default {
       else if (event.key == "KeyW" || event.keyCode == 87) this.changeMode("week");
       else if (event.key == "KeyR" || event.keyCode == 82) this.updateTime();
     });
+
+    // TODO: Fix HMR registering event listeners multiple times
+
+    /** @type {number} */
+    let startX;
+    /** @type {number} */
+    let startY;
+    let ongoingTouchCount = 0;
+    document.addEventListener("touchstart", event => {
+      const touches = event.touches;
+      ongoingTouchCount += touches.length;
+      startX = touches[0].clientX;
+      startY = touches[0].clientY;
+    });
+    document.addEventListener("touchmove", event => {
+      if (ongoingTouchCount === 1) event.preventDefault();
+    }, {
+      passive: false
+    })
+    document.addEventListener("touchend", event => {
+      ongoingTouchCount -= event.changedTouches.length;
+      if (ongoingTouchCount !== 0) return;
+      const diffX = event.changedTouches[0].clientX - startX;
+      const absDiffY = Math.abs(event.changedTouches[0].clientY - startY);
+      // Prevent accidental changes
+      if (Math.abs(diffX) > 2 * absDiffY) {
+        this.nextOrPrevious(diffX < 0);
+      }
+    })
     // TODO: FIX DIALOG NOT SHOWING UP ON PAGE LOAD (SETTINGS ROUTE)
     setTimeout(() => this.settings.dialog = this.$route.name == "settings", 250); // TEMPORARY FIX
   },
